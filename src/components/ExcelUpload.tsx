@@ -47,32 +47,32 @@ export function ExcelUpload({ onUploadComplete }: ExcelUploadProps) {
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
+      className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${isDragging ? "border-accent bg-accent/5" : "border-accent/30 hover:border-accent/60 hover:bg-accent/2"}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
     >
       {uploading ? (
         <div className="flex flex-col items-center gap-3 animate-pulse">
-          <FileSpreadsheet className="h-12 w-12 text-primary" />
+          <FileSpreadsheet className="h-12 w-12 text-accent" />
           <p className="text-sm text-muted-foreground">Processing file...</p>
         </div>
       ) : result ? (
         <div className="flex flex-col items-center gap-3 animate-fade-in">
-          <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
-            <Check className="h-6 w-6 text-accent" />
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Check className="h-6 w-6 text-primary" />
           </div>
           <p className="text-sm font-medium">{result.count} books imported</p>
           <Button variant="outline" size="sm" onClick={() => setResult(null)}>Upload another</Button>
         </div>
       ) : (
         <label className="flex flex-col items-center gap-3 cursor-pointer">
-          <Upload className="h-12 w-12 text-muted-foreground" />
+          <Upload className="h-12 w-12 text-accent" />
           <div>
             <p className="text-sm font-medium">Drop Excel/CSV file here</p>
             <p className="text-xs text-muted-foreground mt-1">Supports .xlsx, .xls, .csv</p>
           </div>
-          <Button variant="outline" size="sm" disabled={uploading}>Browse Files</Button>
+          <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" size="sm" disabled={uploading}>Browse Files</Button>
           <input
             type="file"
             accept=".xlsx,.xls,.csv"

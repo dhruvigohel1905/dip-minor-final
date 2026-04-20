@@ -185,14 +185,14 @@ export const DIPAnalysis = () => {
 
   return (
     <div className="space-y-6">
-      <div className="glass-card rounded-xl p-6">
-        <h2 className="text-xl font-display font-semibold mb-4">Digital Image Processing (DIP)</h2>
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-border">
+        <h2 className="text-xl font-display font-semibold mb-4 text-foreground">Digital Image Processing</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Upload an image and run various standard image processing algorithms directly in your browser.
+          Upload an image and run various image processing algorithms directly in your browser.
         </p>
 
         <div className="mb-6 flex gap-2 flex-wrap">
-          <label className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors text-sm font-medium">
+          <label className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg cursor-pointer hover:bg-primary/90 transition-colors text-sm font-medium shadow-sm">
             <Upload className="w-4 h-4" />
             Upload Image
             <input 
@@ -205,24 +205,23 @@ export const DIPAnalysis = () => {
           
           {originalImageData && (
             <>
-              <Button variant="outline" onClick={() => applyFilter('grayscale')} disabled={isProcessing}>Grayscale</Button>
-              <Button variant="outline" onClick={() => applyFilter('invert')} disabled={isProcessing}>Negative</Button>
-              <Button variant="outline" onClick={() => applyFilter('sepia')} disabled={isProcessing}>Sepia</Button>
-              <Button variant="outline" onClick={() => applyFilter('edge')} disabled={isProcessing}>Edge Detection</Button>
-              <Button variant="outline" onClick={() => applyFilter('histogram')} disabled={isProcessing}>
+              <Button variant="outline" onClick={() => applyFilter('grayscale')} disabled={isProcessing} className="border-primary/30 hover:bg-primary/5">Grayscale</Button>
+              <Button variant="outline" onClick={() => applyFilter('invert')} disabled={isProcessing} className="border-primary/30 hover:bg-primary/5">Negative</Button>
+              <Button variant="outline" onClick={() => applyFilter('edge')} disabled={isProcessing} className="border-primary/30 hover:bg-primary/5">Edge Detection</Button>
+              <Button variant="outline" onClick={() => applyFilter('histogram')} disabled={isProcessing} className="border-primary/30 hover:bg-primary/5">
                 <BarChart className="w-4 h-4 mr-2" /> Histogram
               </Button>
-              <Button variant="ghost" onClick={() => applyFilter('reset')} disabled={isProcessing}>Reset</Button>
+              <Button variant="ghost" onClick={() => applyFilter('reset')} disabled={isProcessing} className="hover:bg-primary/5">Reset</Button>
             </>
           )}
         </div>
 
         <div className={`grid grid-cols-1 ${histogramData.length > 0 ? 'lg:grid-cols-2' : ''} gap-8`}>
-          <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-lg min-h-[300px] border border-border">
+          <div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg min-h-[300px] border border-primary/10">
             {!imageSrc ? (
               <div className="flex flex-col items-center text-muted-foreground">
                 <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
-                <p>No image selected for Analysis</p>
+                <p>No image selected for analysis</p>
               </div>
             ) : (
                 <canvas 
@@ -230,12 +229,12 @@ export const DIPAnalysis = () => {
                   className={`max-w-full rounded-md shadow-md ${isProcessing ? 'opacity-50' : 'opacity-100'} transition-opacity`}
                 />
             )}
-            {isProcessing && <p className="mt-4 text-sm font-medium animate-pulse duration-700">Analysing Image...</p>}
+            {isProcessing && <p className="mt-4 text-sm font-medium animate-pulse text-primary">Analyzing image...</p>}
           </div>
 
           {histogramData.length > 0 && (
-            <div className="p-4 bg-muted/30 rounded-lg border border-border flex flex-col h-[300px] lg:h-auto min-h-[300px]">
-              <h3 className="text-sm font-medium mb-4 text-center">Intensity Histogram</h3>
+            <div className="p-4 bg-gray-50 rounded-lg border border-primary/10 flex flex-col h-[300px] lg:h-auto min-h-[300px]">
+              <h3 className="text-sm font-medium mb-4 text-center text-foreground">Intensity Histogram</h3>
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart data={histogramData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
