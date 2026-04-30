@@ -28,9 +28,36 @@ export interface MatchResult {
 }
 
 export async function fetchBooks(): Promise<Book[]> {
-  const { data, error } = await supabase.from("books").select("*").order("title");
-  if (error) throw error;
-  return (data || []) as Book[];
+  try {
+    const { data, error } = await supabase.from("books").select("*").order("title");
+    
+    if (error) {
+      console.error("Supabase error object:", JSON.stringify(error));
+      throw new Error(error.message || "Failed to fetch books from database");
+    }
+    
+    if (!data) {
+      throw new Error("No data returned from database");
+    }
+    
+    return data as Book[];
+  } catch (err) {
+    console.error("FetchBooks catch block - error:", err);
+    
+    // Handle different error types
+    if (err instanceof TypeError) {
+      // Network error (Failed to fetch)
+      console.error("Network error detected");
+      throw new Error("Cannot connect to the library database. Please check your internet connection or Supabase configuration.");
+    }
+    
+    if (err instanceof Error) {
+      console.error("Error message:", err.message);
+      throw err;
+    }
+    
+    throw new Error(`An unexpected error occurred: ${String(err)}`);
+  }
 }
 
 export async function insertBooks(books: Omit<Book, "id" | "created_at" | "updated_at">[]): Promise<void> {

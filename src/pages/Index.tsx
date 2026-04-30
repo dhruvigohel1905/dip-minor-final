@@ -16,20 +16,37 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
   const [scanResults, setScanResults] = useState<MatchResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadBooks = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       const data = await fetchBooks();
       setBooks(data);
+      setLoadError(null);
     } catch (err) {
-      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to load books from library";
+      console.error("Books load error:", err);
+      setLoadError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadBooks(); }, [loadBooks]);
+
+  // Show toast when load error occurs
+  useEffect(() => {
+    if (loadError) {
+      toast({
+        title: "Library Load Failed",
+        description: loadError,
+        variant: "destructive",
+      });
+    }
+  }, [loadError, toast]);
 
   const handleImageCapture = useCallback(async (base64: string) => {
     setIsScanning(true);
@@ -127,6 +144,21 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
           <TabsContent value="library">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               <div className="space-y-6">
+                {loadError && (
+                  <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-red-200 dark:border-red-900">
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-red-600 dark:text-red-400">Failed to Load Library</h3>
+                      <p className="text-sm text-red-600 dark:text-red-300">{loadError}</p>
+                      <button 
+                        onClick={loadBooks}
+                        className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Dashboard Charts */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-border">
                   <h2 className="text-xl font-display font-semibold mb-4 text-foreground">Library Analytics</h2>
