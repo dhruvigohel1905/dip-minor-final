@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, ScanLine, Database, BarChart3, Aperture } from "lucide-react";
+import { BookOpen, ScanLine, BarChart3, Aperture, ScanBarcode } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageCapture } from "@/components/ImageCapture";
 import { ExcelUpload } from "@/components/ExcelUpload";
 import { BookList } from "@/components/BookList";
 import { ScanResults } from "@/components/ScanResults";
 import { DashboardCharts } from "@/components/DashboardCharts";
+import { ShelfHeatmap } from "@/components/ShelfHeatmap";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { fetchBooks, scanImage, matchBooks, deleteBook, type Book, type MatchResult } from "@/lib/bookService";
 import { DIPAnalysis } from "@/components/DIPAnalysis";
 import { useToast } from "@/hooks/use-toast";
+import { useVoiceAlert } from "@/hooks/useVoiceAlert";
 import { motion } from "framer-motion";
 
 const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; onActiveTabChange?: (tab: string) => void }) => {
@@ -18,6 +21,7 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { announceScanResults } = useVoiceAlert();
 
   const loadBooks = useCallback(async () => {
     setLoading(true);
@@ -59,7 +63,9 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
       }
       const results = matchBooks(extracted, books);
       setScanResults(results);
-      toast({ title: `${extracted.length} books detected`, description: `${results.filter(r => r.match).length} matched with library.` });
+      const matchedCount = results.filter(r => r.match).length;
+      toast({ title: `${extracted.length} books detected`, description: `${matchedCount} matched with library.` });
+      announceScanResults(extracted.length, matchedCount);
     } catch (err) {
       toast({ title: "Scan failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
     } finally {
@@ -81,28 +87,34 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 h-12 bg-primary/10 border border-primary/20">
+          <TabsList className="grid w-full grid-cols-5 h-12 bg-primary/10 border border-primary/20">
             <TabsTrigger 
               value="scan" 
-              className="gap-2 font-display data-[state=active]:bg-primary data-[state=active]:text-white"
+              className="gap-1.5 font-display text-xs data-[state=active]:bg-primary data-[state=active]:text-white"
             >
               <ScanLine className="h-4 w-4" /> Scan
             </TabsTrigger>
             <TabsTrigger 
+              value="barcode" 
+              className="gap-1.5 font-display text-xs data-[state=active]:bg-primary data-[state=active]:text-white"
+            >
+              <ScanBarcode className="h-4 w-4" /> Barcode
+            </TabsTrigger>
+            <TabsTrigger 
               value="library" 
-              className="gap-2 font-display data-[state=active]:bg-primary data-[state=active]:text-white"
+              className="gap-1.5 font-display text-xs data-[state=active]:bg-primary data-[state=active]:text-white"
             >
               <BookOpen className="h-4 w-4" /> Library
             </TabsTrigger>
             <TabsTrigger 
               value="import" 
-              className="gap-2 font-display data-[state=active]:bg-primary data-[state=active]:text-white"
+              className="gap-1.5 font-display text-xs data-[state=active]:bg-primary data-[state=active]:text-white"
             >
               <BarChart3 className="h-4 w-4" /> Import
             </TabsTrigger>
             <TabsTrigger 
               value="dip" 
-              className="gap-2 font-display data-[state=active]:bg-primary data-[state=active]:text-white"
+              className="gap-1.5 font-display text-xs data-[state=active]:bg-primary data-[state=active]:text-white"
             >
               <Aperture className="h-4 w-4" /> DIP
             </TabsTrigger>
@@ -141,6 +153,12 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
             )}
           </TabsContent>
 
+          <TabsContent value="barcode">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <BarcodeScanner books={books} />
+            </motion.div>
+          </TabsContent>
+
           <TabsContent value="library">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               <div className="space-y-6">
@@ -168,6 +186,19 @@ const Index = ({ activeTab = "scan", onActiveTabChange }: { activeTab?: string; 
                     </div>
                   ) : (
                     <DashboardCharts books={books} />
+                  )}
+                </div>
+
+                {/* Shelf Heatmap */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-border">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-display font-semibold text-foreground">Shelf Heatmap</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Books per Genre × Publication Year — hover a cell for details</p>
+                  </div>
+                  {loading ? (
+                    <div className="h-48 rounded-lg bg-muted animate-pulse" />
+                  ) : (
+                    <ShelfHeatmap books={books} />
                   )}
                 </div>
 

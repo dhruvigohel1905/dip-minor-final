@@ -1,4 +1,4 @@
-import { ScanLine, BookOpen, Upload, Aperture, X } from "lucide-react";
+import { ScanLine, BookOpen, Upload, Aperture, X, ScanBarcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,12 @@ const menuItems = [
     label: "Scan Books",
     icon: ScanLine,
     description: "Capture & scan shelf books",
+  },
+  {
+    id: "barcode",
+    label: "Barcode Scanner",
+    icon: ScanBarcode,
+    description: "Scan ISBN / barcode",
   },
   {
     id: "library",
