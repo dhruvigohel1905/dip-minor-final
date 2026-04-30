@@ -1,6 +1,53 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AuthUser, LoginCredentials, RegisterData } from "@/types/auth";
-import type { User } from "@/types/database";
+
+/**
+ * Build an AuthUser from a Supabase auth user object.
+ * Falls back to user_metadata if the public.users table is unavailable.
+ */
+function buildUserFromMetadata(
+  id: string,
+  email: string,
+  metadata: Record<string, unknown>
+): AuthUser {
+  return {
+    id,
+    email,
+    full_name: (metadata?.full_name as string) ?? email.split("@")[0],
+    role: (metadata?.role as "admin" | "librarian") ?? "librarian",
+    is_active: true,
+    created_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Try to fetch user profile from public.users table.
+ * Returns null (without throwing) if the table doesn't exist yet.
+ */
+export async function getUserProfile(userId: string): Promise<AuthUser | null> {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, email, full_name, role, is_active, created_at")
+      .eq("id", userId)
+      .single();
+
+    if (!error && data) return data as AuthUser;
+  } catch {
+    // table may not exist — fall through to metadata
+  }
+
+  // Fallback: read from auth user metadata
+  const { data: authData } = await supabase.auth.getUser();
+  if (authData?.user?.id === userId) {
+    return buildUserFromMetadata(
+      userId,
+      authData.user.email ?? "",
+      authData.user.user_metadata ?? {}
+    );
+  }
+  return null;
+}
 
 /**
  * Login user with email and password
@@ -14,51 +61,56 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
   if (error) throw new Error(error.message);
   if (!data.user) throw new Error("Login failed: No user data returned");
 
-  // Fetch user profile with role information
-  const userProfile = await getUserProfile(data.user.id);
-  if (!userProfile) throw new Error("User profile not found");
-
-  return userProfile;
+  const profile = await getUserProfile(data.user.id);
+  if (!profile) throw new Error("User profile not found");
+  return profile;
 }
 
 /**
- * Register new user account
+ * Register new user account.
+ * Stores full_name and role in user_metadata (always works).
+ * Also tries to insert a row into public.users (best-effort).
  */
 export async function register(data: RegisterData): Promise<AuthUser> {
-  // Create auth user
+  // 1. Create auth user — store role & name in metadata so we always have them
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
+    options: {
+      data: {
+        full_name: data.full_name,
+        role: data.role,
+      },
+    },
   });
 
   if (authError) throw new Error(authError.message);
   if (!authData.user) throw new Error("Registration failed: No user data returned");
 
-  // Create user profile with role
-  const { error: profileError } = await supabase.from("users").insert([
-    {
-      id: authData.user.id,
-      email: data.email,
-      full_name: data.full_name,
-      role: data.role,
-      is_active: true,
-    },
-  ]);
-
-  if (profileError) {
-    // Clean up auth user if profile creation fails
-    await supabase.auth.admin.deleteUser(authData.user.id);
-    throw new Error(profileError.message);
+  // 2. Best-effort: insert profile row into public.users
+  try {
+    const { error: profileError } = await supabase.from("users").insert([
+      {
+        id: authData.user.id,
+        email: data.email,
+        full_name: data.full_name,
+        role: data.role,
+        is_active: true,
+      },
+    ]);
+    if (profileError) {
+      // Log but don't fail — metadata is the source of truth
+      console.warn("Could not insert into public.users:", profileError.message);
+    }
+  } catch {
+    // Table doesn't exist — that's OK, metadata has everything we need
+    console.warn("public.users table not found, using auth metadata instead.");
   }
 
-  return {
-    id: authData.user.id,
-    email: data.email,
+  return buildUserFromMetadata(authData.user.id, data.email, {
     full_name: data.full_name,
     role: data.role,
-    is_active: true,
-    created_at: new Date().toISOString(),
-  };
+  });
 }
 
 /**
@@ -66,30 +118,8 @@ export async function register(data: RegisterData): Promise<AuthUser> {
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const { data, error } = await supabase.auth.getUser();
-  
-  if (error || !data.user) {
-    return null;
-  }
-
+  if (error || !data.user) return null;
   return getUserProfile(data.user.id);
-}
-
-/**
- * Get user profile from users table
- */
-export async function getUserProfile(userId: string): Promise<AuthUser | null> {
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, email, full_name, role, is_active, created_at")
-    .eq("id", userId)
-    .single();
-
-  if (error) {
-    console.error("Error fetching user profile:", error);
-    return null;
-  }
-
-  return data as AuthUser;
 }
 
 /**
@@ -106,24 +136,6 @@ export async function logout(): Promise<void> {
 export async function updatePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message);
-}
-
-/**
- * Update user profile
- */
-export async function updateUserProfile(
-  userId: string,
-  updates: Partial<User>
-): Promise<User> {
-  const { data, error } = await supabase
-    .from("users")
-    .update(updates)
-    .eq("id", userId)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data as User;
 }
 
 /**
@@ -158,27 +170,20 @@ export function onAuthStateChange(
       callback(null);
     }
   });
-
   return data.subscription;
 }
 
 /**
  * Check if user has specific role
  */
-export function hasRole(user: AuthUser | null, requiredRole: 'admin' | 'librarian'): boolean {
+export function hasRole(user: AuthUser | null, requiredRole: "admin" | "librarian"): boolean {
   return user?.role === requiredRole;
 }
 
-/**
- * Check if user is admin
- */
 export function isAdmin(user: AuthUser | null): boolean {
-  return hasRole(user, 'admin');
+  return hasRole(user, "admin");
 }
 
-/**
- * Check if user is librarian
- */
 export function isLibrarian(user: AuthUser | null): boolean {
-  return hasRole(user, 'librarian');
+  return hasRole(user, "librarian");
 }
