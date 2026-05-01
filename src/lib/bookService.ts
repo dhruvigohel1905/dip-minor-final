@@ -9,6 +9,8 @@ export interface Book {
   genre: string | null;
   publisher: string | null;
   year: number | null;
+  shelf_number: string | null;
+  rack_number: string | null;
   additional_metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -25,6 +27,8 @@ export interface MatchResult {
   match: Book | null;
   confidence: number;
   alternativeMatches: Array<{ book: Book; score: number }>;
+  isMisplaced?: boolean;
+  expectedShelf?: string | null;
 }
 
 export async function fetchBooks(): Promise<Book[]> {
@@ -61,12 +65,44 @@ export async function fetchBooks(): Promise<Book[]> {
 }
 
 export async function insertBooks(books: Omit<Book, "id" | "created_at" | "updated_at">[]): Promise<void> {
-  const payload = books.map(b => ({
-    ...b,
-    additional_metadata: b.additional_metadata as unknown as Record<string, never>,
-  }));
+  const payload = books.map(b => {
+    const { shelf_number, rack_number, ...rest } = b;
+    // We keep shelf/rack only if they have values, to avoid errors on non-existent columns
+    // if the user hasn't added them to Supabase yet.
+    const item: any = { ...rest };
+    if (shelf_number) item.shelf_number = shelf_number;
+    if (rack_number) item.rack_number = rack_number;
+    
+    return {
+      ...item,
+      additional_metadata: (b.additional_metadata || {}) as any,
+    };
+  });
+  
   const { error } = await supabase.from("books").insert(payload);
-  if (error) throw error;
+  if (error) {
+    console.error("Insert error:", error);
+    // Fallback: If top-level insert fails, try putting shelf/rack into metadata
+    if (error.message.includes("column") && error.message.includes("not found")) {
+      const fallbackPayload = books.map(b => ({
+        title: b.title,
+        author: b.author,
+        isbn: b.isbn,
+        genre: b.genre,
+        publisher: b.publisher,
+        year: b.year,
+        additional_metadata: {
+          ...(b.additional_metadata || {}),
+          shelf_number: b.shelf_number,
+          rack_number: b.rack_number
+        } as any
+      }));
+      const { error: fallbackError } = await supabase.from("books").insert(fallbackPayload);
+      if (fallbackError) throw fallbackError;
+    } else {
+      throw error;
+    }
+  }
 }
 
 export async function deleteBook(id: string): Promise<void> {
@@ -82,7 +118,7 @@ export async function scanImage(imageBase64: string): Promise<ExtractedBook[]> {
   return data?.books || [];
 }
 
-export function matchBooks(extracted: ExtractedBook[], library: Book[]): MatchResult[] {
+export function matchBooks(extracted: ExtractedBook[], library: Book[], currentShelf?: string): MatchResult[] {
   if (library.length === 0) return extracted.map((e) => ({ extracted: e, match: null, confidence: 0, alternativeMatches: [] }));
 
   const fuse = new Fuse(library, {
@@ -97,29 +133,53 @@ export function matchBooks(extracted: ExtractedBook[], library: Book[]): MatchRe
   });
 
   return extracted.map((ext) => {
+    let match: Book | null = null;
+    let confidence = 0;
+    let alternatives: Array<{ book: Book; score: number }> = [];
+
     // Try ISBN exact match first
     if (ext.isbn) {
       const isbnMatch = library.find((b) => b.isbn && b.isbn.replace(/[-\s]/g, "") === ext.isbn!.replace(/[-\s]/g, ""));
       if (isbnMatch) {
-        return { extracted: ext, match: isbnMatch, confidence: 100, alternativeMatches: [] };
+        match = isbnMatch;
+        confidence = 100;
       }
     }
 
-    const query = [ext.title, ext.author].filter(Boolean).join(" ");
-    const results = fuse.search(query);
+    if (!match) {
+      const query = [ext.title, ext.author].filter(Boolean).join(" ");
+      const results = fuse.search(query);
 
-    if (results.length === 0) {
-      return { extracted: ext, match: null, confidence: 0, alternativeMatches: [] };
+      if (results.length > 0) {
+        const best = results[0];
+        match = best.item;
+        confidence = Math.round((1 - (best.score || 0)) * 100);
+        alternatives = results.slice(1, 4).map((r) => ({
+          book: r.item,
+          score: Math.round((1 - (r.score || 0)) * 100),
+        }));
+      }
     }
 
-    const best = results[0];
-    const confidence = Math.round((1 - (best.score || 0)) * 100);
-    const alternatives = results.slice(1, 4).map((r) => ({
-      book: r.item,
-      score: Math.round((1 - (r.score || 0)) * 100),
-    }));
+    // Misplaced detection logic
+    let isMisplaced = false;
+    let expectedShelf = null;
 
-    return { extracted: ext, match: best.item, confidence, alternativeMatches: alternatives };
+    if (match && currentShelf) {
+      expectedShelf = match.shelf_number || (match.additional_metadata as any)?.shelf_number;
+      if (expectedShelf && expectedShelf !== currentShelf) {
+        isMisplaced = true;
+      }
+    }
+
+    return { 
+      extracted: ext, 
+      match, 
+      confidence, 
+      alternativeMatches: alternatives,
+      isMisplaced,
+      expectedShelf
+    };
   });
 }
 

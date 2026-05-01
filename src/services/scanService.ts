@@ -153,6 +153,8 @@ export async function getRecentScans(limit: number = 10): Promise<Scan[]> {
   return data as Scan[];
 }
 
+import { createAlertNotification } from "./notificationService";
+
 /**
  * Create alert
  */
@@ -164,7 +166,7 @@ export async function createAlert(
   detectedShelf: string | null,
   message: string
 ): Promise<Alert> {
-  const { data, error } = await supabase
+  const { data: alert, error } = await supabase
     .from("alerts")
     .insert([
       {
@@ -181,7 +183,25 @@ export async function createAlert(
     .single();
 
   if (error) throw new Error(error.message);
-  return data as Alert;
+
+  // Fetch librarians to notify
+  let librarians: any[] = [];
+  const { data, error: fetchError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("role", "librarian");
+  
+  if (!fetchError && data) {
+    librarians = data;
+  } else {
+    console.warn("Could not fetch librarians from users table (table might be missing or empty)");
+  }
+
+  if (librarians.length > 0) {
+    await createAlertNotification(alert as Alert, librarians);
+  }
+
+  return alert as Alert;
 }
 
 /**

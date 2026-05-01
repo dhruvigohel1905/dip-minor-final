@@ -21,13 +21,23 @@ interface AuthState extends AuthSession {
 
 export const useAuthStore = create<AuthState>((set) => {
   // Initialize auth state on store creation
-  getCurrentUser().then((user) => {
-    set({
-      user,
-      isAuthenticated: !!user,
-      isLoading: false,
+  getCurrentUser()
+    .then((user) => {
+      set({
+        user,
+        isAuthenticated: !!user,
+        isLoading: false,
+      });
+    })
+    .catch((err) => {
+      console.error("Auth initialization failed:", err);
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: "Failed to initialize authentication",
+      });
     });
-  });
 
   // Subscribe to auth state changes
   const unsubscribe = onAuthStateChange((user) => {

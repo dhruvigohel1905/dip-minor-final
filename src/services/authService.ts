@@ -61,8 +61,18 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
   if (error) throw new Error(error.message);
   if (!data.user) throw new Error("Login failed: No user data returned");
 
-  const profile = await getUserProfile(data.user.id);
-  if (!profile) throw new Error("User profile not found");
+  let profile = await getUserProfile(data.user.id);
+  
+  if (!profile && data.user) {
+    // Fallback if profile row is missing but auth succeeded
+    profile = buildUserFromMetadata(
+      data.user.id,
+      data.user.email ?? "",
+      data.user.user_metadata ?? {}
+    );
+  }
+
+  if (!profile) throw new Error("Login failed: Could not retrieve user profile");
   return profile;
 }
 

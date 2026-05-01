@@ -7,12 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Upload, Camera, BarChart3, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { DashboardStatsData } from '@/types/dashboard';
+
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
 }
 
 export const Dashboard = ({ onNavigate }: DashboardProps) => {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStatsData | null>(null);
 
   const quickActions = [
     {

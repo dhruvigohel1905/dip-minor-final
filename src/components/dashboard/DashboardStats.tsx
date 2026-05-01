@@ -4,8 +4,10 @@ import { getDashboardStats } from '@/services/scanService';
 import { BookOpen, BookMarked, AlertTriangle, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { DashboardStatsData } from '@/types/dashboard';
+
 interface DashboardStatsProps {
-  onDataLoad?: (stats: any) => void;
+  onDataLoad?: (stats: DashboardStatsData) => void;
 }
 
 export const DashboardStats = ({ onDataLoad }: DashboardStatsProps) => {

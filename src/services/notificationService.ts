@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { InAppNotification, SendNotificationPayload, EmailNotificationPayload } from "@/types/notifications";
+import type { Alert, User } from "@/types/database";
 
 /**
  * Send in-app notification
@@ -21,7 +22,11 @@ export async function sendInAppNotification(payload: SendNotificationPayload): P
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Failed to send in-app notification:", error.message);
+    // Don't crash the app if notification fails
+    return {} as InAppNotification;
+  }
   return data as InAppNotification;
 }
 
@@ -66,8 +71,8 @@ export async function sendSMSNotification(phoneNumber: string, message: string):
  * Sends notifications to relevant users when an alert is created
  */
 export async function createAlertNotification(
-  alert: any,
-  librarians: any[]
+  alert: Alert,
+  librarians: User[]
 ): Promise<void> {
   const title = `Library Alert: ${alert.alert_type.charAt(0).toUpperCase() + alert.alert_type.slice(1)}`;
   const message = alert.message || `A ${alert.alert_type} book has been detected.`;

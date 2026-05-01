@@ -51,6 +51,7 @@ export interface Scan {
   total_books_found: number;
   missing_books_count: number;
   misplaced_books_count: number;
+  correct_books_count: number;
   snapshot_url: string | null;
   duration_ms: number | null;
   created_at: string;
@@ -65,6 +66,8 @@ export interface ScanItem {
   confidence: number | null;
   position_in_shelf: number | null;
   is_match: boolean;
+  is_misplaced: boolean;
+  expected_shelf?: string | null;
   created_at: string;
 }
 
@@ -89,11 +92,21 @@ export interface UploadedBook {
   image_url: string | null;
   extracted_title: string | null;
   extracted_author: string | null;
+  extracted_isbn: string | null;
   ocr_confidence: number | null;
   status: 'pending' | 'approved' | 'rejected';
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface UploadedImage {
+  id: string;
+  user_id: string;
+  image_url: string;
+  extracted_data: Record<string, any> | null;
+  processed_at: string | null;
+  created_at: string;
 }
 
 export interface Notification {
@@ -104,6 +117,7 @@ export interface Notification {
   message: string | null;
   related_alert_id: string | null;
   is_read: boolean;
+  is_resolved?: boolean;
   sent_at: string | null;
   read_at: string | null;
   created_at: string;

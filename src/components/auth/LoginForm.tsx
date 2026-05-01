@@ -28,12 +28,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const ALLOWED_DOMAIN = 'gsfcuniversity.ac.in';
 
+// Email validation without strict domain restriction for testing
 const universityEmail = z
   .string()
-  .email('Invalid email address')
-  .refine((val) => val.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`), {
-    message: `Email must be a @${ALLOWED_DOMAIN} address`,
-  });
+  .email('Invalid email address');
 
 const loginSchema = z.object({
   email: universityEmail,
@@ -78,9 +76,18 @@ const LoginFormInner = ({ onSwitchToRegister }: LoginInnerProps) => {
       toast({ title: 'Welcome back!', description: 'You have been successfully logged in.' });
       navigate('/');
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid credentials';
+      let description = message;
+      
+      if (message.toLowerCase().includes('email not confirmed')) {
+        description = 'Please check your inbox and confirm your email address before logging in.';
+      } else if (message.toLowerCase().includes('invalid login credentials')) {
+        description = 'Invalid email or password. Please try again.';
+      }
+
       toast({
         title: 'Login failed',
-        description: error instanceof Error ? error.message : 'Invalid credentials',
+        description,
         variant: 'destructive',
       });
     } finally {
@@ -205,7 +212,7 @@ const RegisterFormInner = ({ onSwitchToLogin }: RegisterInnerProps) => {
     } catch (error) {
       toast({
         title: 'Registration failed',
-        description: error instanceof Error ? error.message : 'Failed to create account',
+        description: error instanceof Error ? error.message : 'Could not create account. The email may already be in use or the password is too weak.',
         variant: 'destructive',
       });
     } finally {
