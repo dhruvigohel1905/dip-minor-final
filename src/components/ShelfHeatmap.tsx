@@ -102,7 +102,30 @@ export function ShelfHeatmap({ books }: ShelfHeatmapProps) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Information Card - How it helps */}
+      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex gap-6 items-start">
+        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Info className="h-6 w-6 text-primary" />
+        </div>
+        <div className="space-y-2">
+          <h4 className="text-sm font-bold text-primary uppercase tracking-widest">Why this Heatmap helps?</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Collection Insights:</strong> Instantly see which genres and publication years dominate your library, helping you balance the collection.
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Gap Detection:</strong> Identify "white spaces" where you might be missing important historical editions or entire categories.
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Space Planning:</strong> Dense cells indicate high-traffic shelf areas that may require more frequent maintenance or additional shelving.
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Librarian Efficiency:</strong> Quickly locate clusters of related books (by era and genre) without manual searching.
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Legend */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -127,13 +150,13 @@ export function ShelfHeatmap({ books }: ShelfHeatmapProps) {
         <div className="min-w-max">
           {/* Header row — Years */}
           <div className="flex">
-            <div className="w-36 flex-shrink-0 px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/30 border-b border-r border-border">
+            <div className="w-40 flex-shrink-0 px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground bg-muted/40 border-b border-r border-border sticky left-0 z-20">
               Genre ↓ / Year →
             </div>
             {years.map((year) => (
               <div
                 key={year}
-                className="w-16 flex-shrink-0 px-1 py-2 text-center text-xs font-semibold text-muted-foreground bg-muted/30 border-b border-r border-border last:border-r-0"
+                className="w-20 flex-shrink-0 px-1 py-3 text-center text-xs font-bold text-muted-foreground bg-muted/40 border-b border-r border-border last:border-r-0"
               >
                 {year}
               </div>
@@ -148,15 +171,15 @@ export function ShelfHeatmap({ books }: ShelfHeatmapProps) {
             );
             return (
               <div key={genre} className="flex group">
-                {/* Genre label */}
-                <div className="w-36 flex-shrink-0 px-3 py-2 flex items-center justify-between border-b border-r border-border bg-background group-last:border-b-0">
+                {/* Genre label - Sticky */}
+                <div className="w-40 flex-shrink-0 px-4 py-3 flex items-center justify-between border-b border-r border-border bg-background sticky left-0 z-20 group-last:border-b-0">
                   <span
-                    className="text-xs font-medium text-foreground truncate max-w-[90px]"
+                    className="text-xs font-bold text-foreground truncate max-w-[100px]"
                     title={genre}
                   >
                     {genre}
                   </span>
-                  <span className="text-xs text-muted-foreground font-mono ml-1">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
                     {rowTotal}
                   </span>
                 </div>
@@ -169,7 +192,7 @@ export function ShelfHeatmap({ books }: ShelfHeatmapProps) {
                   return (
                     <div
                       key={year}
-                      className="w-16 flex-shrink-0 h-10 flex items-center justify-center text-xs font-semibold border-b border-r border-border/40 cursor-default transition-transform hover:scale-110 hover:z-10 hover:shadow-lg hover:rounded group-last:border-b-0 last:border-r-0"
+                      className="w-20 flex-shrink-0 h-14 flex items-center justify-center text-xs font-bold border-b border-r border-border/40 cursor-pointer transition-all hover:scale-105 hover:z-10 hover:shadow-2xl hover:rounded-sm group-last:border-b-0 last:border-r-0"
                       style={{
                         backgroundColor: heatColor(count),
                         color: textColor(count),

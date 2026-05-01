@@ -154,7 +154,7 @@ const LoginFormInner = ({ onSwitchToRegister }: LoginInnerProps) => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+            <Button type="submit" className="w-full gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20" disabled={isLoading}>
               {isLoading
                 ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 : <LogIn className="h-4 w-4" />}
@@ -350,7 +350,7 @@ const RegisterFormInner = ({ onSwitchToLogin }: RegisterInnerProps) => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+            <Button type="submit" className="w-full gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20" disabled={isLoading}>
               {isLoading
                 ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 : <ArrowRight className="h-4 w-4" />}

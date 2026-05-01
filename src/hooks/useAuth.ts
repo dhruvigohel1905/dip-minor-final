@@ -14,8 +14,6 @@ interface AuthState extends AuthSession {
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   refreshSession: () => Promise<void>;
-  setUser: (user: AuthUser | null) => void;
-  setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 

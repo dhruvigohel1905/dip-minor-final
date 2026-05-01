@@ -23,6 +23,14 @@ export function ImageImport({ onSuccess }: ImageImportProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      if (!selectedFile.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file (JPG, PNG, etc.)",
+          variant: "destructive"
+        });
+        return;
+      }
       if (selectedFile.size > 5 * 1024 * 1024) {
         toast({
           title: "File too large",

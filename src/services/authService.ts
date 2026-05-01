@@ -109,12 +109,10 @@ export async function register(data: RegisterData): Promise<AuthUser> {
       },
     ]);
     if (profileError) {
-      // Log but don't fail — metadata is the source of truth
-      console.warn("Could not insert into public.users:", profileError.message);
+      console.warn("Could not insert into public.users (table might be missing):", profileError.message);
     }
-  } catch {
-    // Table doesn't exist — that's OK, metadata has everything we need
-    console.warn("public.users table not found, using auth metadata instead.");
+  } catch (err) {
+    console.warn("public.users table interaction failed:", err);
   }
 
   return buildUserFromMetadata(authData.user.id, data.email, {

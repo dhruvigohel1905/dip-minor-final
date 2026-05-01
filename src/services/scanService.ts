@@ -184,21 +184,18 @@ export async function createAlert(
 
   if (error) throw new Error(error.message);
 
-  // Fetch librarians to notify
-  let librarians: any[] = [];
-  const { data, error: fetchError } = await supabase
-    .from("users")
-    .select("*")
-    .eq("role", "librarian");
-  
-  if (!fetchError && data) {
-    librarians = data;
-  } else {
-    console.warn("Could not fetch librarians from users table (table might be missing or empty)");
-  }
-
-  if (librarians.length > 0) {
-    await createAlertNotification(alert as Alert, librarians);
+  // Fetch librarians to notify - Best effort, don't fail if table is missing
+  try {
+    const { data: librarians, error: fetchError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("role", "librarian");
+    
+    if (!fetchError && librarians && librarians.length > 0) {
+      await createAlertNotification(alert as Alert, librarians);
+    }
+  } catch (err) {
+    console.warn("Notification system skipped due to missing users table", err);
   }
 
   return alert as Alert;
